@@ -1,4 +1,4 @@
-const { DocumentNotFoundError } = require('mongoose').Error;
+const { DocumentNotFoundError, ValidationError } = require('mongoose').Error;
 const Cards = require('../models/card');
 const { sendMessage } = require('../utils/utils');
 
@@ -19,10 +19,16 @@ const addCard = (req, res) => {
   } else if (!link) {
     sendMessage(res, 400, 'Не указана ссылка на карточку');
   } else {
-    Cards.create({ owner: req.user._id, name, link })
+    Cards.create({ owner: req.user._id, name, link }, { validateBeforeSave: true })
       .then((card) => card.populate('owner'))
       .then((card) => res.send(card))
-      .catch(() => sendMessage(res, 500, 'Произошла ошибка'));
+      .catch((err) => {
+        if (err instanceof ValidationError) {
+          sendMessage(res, 400, 'Переданые некорректные данные карточки');
+        } else {
+          sendMessage(res, 500, 'Произошла ошибка');
+        }
+      });
   }
 };
 
