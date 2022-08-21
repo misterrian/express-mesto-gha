@@ -28,7 +28,7 @@ mongoose.connect(MONGODB, {
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
-app.get('*', (req, res) => {
+app.use('*', (req, res) => {
   sendMessage(res, 404, 'Bad path');
 });
 
