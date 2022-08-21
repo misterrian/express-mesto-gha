@@ -1,4 +1,7 @@
-const { DocumentNotFoundError, ValidationError } = require('mongoose').Error;
+const mongoose = require('mongoose');
+const { DocumentNotFoundError, ValidationError } = mongoose.Error;
+const ObjectId = mongoose.Types.ObjectId;
+
 const Card = require('../models/card');
 const { sendMessage } = require('../utils/utils');
 
@@ -12,27 +15,24 @@ const getCards = (req, res) => {
 const addCard = (req, res) => {
   const { name, link } = req.body;
 
-  if (Object.keys(req.body).length > 2) {
-    sendMessage(res, 400, 'Переданы лишние параметры');
-  } else if (!name) {
-    sendMessage(res, 400, 'Не указано имя карточки');
-  } else if (!link) {
-    sendMessage(res, 400, 'Не указана ссылка на карточку');
-  } else {
-    Card.create({ owner: req.user._id, name, link })
-      .then((card) => card.populate('owner'))
-      .then((card) => res.send(card))
-      .catch((err) => {
-        if (err instanceof ValidationError) {
-          sendMessage(res, 400, 'Переданые некорректные данные карточки');
-        } else {
-          sendMessage(res, 500, 'Произошла ошибка');
-        }
-      });
-  }
+  Card.create({ owner: req.user._id, name, link })
+    .then((card) => card.populate('owner'))
+    .then((card) => res.send(card))
+    .catch((err) => {
+      if (err instanceof ValidationError) {
+        sendMessage(res, 400, 'Переданые некорректные данные карточки');
+      } else {
+        sendMessage(res, 500, 'Произошла ошибка');
+      }
+    });
 };
 
 const deleteCard = (req, res) => {
+  if (!ObjectId.isValid(req.params.cardId)) {
+    sendMessage(res, 400, 'Некоректный id карточки');
+    return;
+  }
+
   Card.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
     .populate('owner')
     .orFail()
@@ -47,6 +47,11 @@ const deleteCard = (req, res) => {
 };
 
 const addLike = (req, res) => {
+  if (!ObjectId.isValid(req.params.cardId)) {
+    sendMessage(res, 400, 'Некоректный id карточки');
+    return;
+  }
+
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -65,6 +70,11 @@ const addLike = (req, res) => {
 };
 
 const removeLike = (req, res) => {
+  if (!ObjectId.isValid(req.params.cardId)) {
+    sendMessage(res, 400, 'Некоректный id карточки');
+    return;
+  }
+
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },

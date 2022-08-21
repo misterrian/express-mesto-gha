@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
+const { sendMessage } = require('./utils/utils');
 
 const app = express();
 app.use(bodyParser.json());
@@ -26,6 +27,10 @@ mongoose.connect(MONGODB, {
 
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
+
+app.get('*', (req, res) => {
+  sendMessage(res, 404, 'Bad path');
+});
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
