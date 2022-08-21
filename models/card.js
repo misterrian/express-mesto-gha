@@ -30,6 +30,7 @@ const cardSchema = new mongoose.Schema({
   },
 }, {
   versionKey: false,
+  validateBeforeSave: true,
 });
 
 module.exports = mongoose.model('card', cardSchema);

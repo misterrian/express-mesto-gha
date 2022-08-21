@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
   },
 }, {
   versionKey: false,
+  validateBeforeSave: true,
 });
 
 module.exports = mongoose.model('user', userSchema);

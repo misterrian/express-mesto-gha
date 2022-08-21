@@ -1,9 +1,9 @@
 const { DocumentNotFoundError, ValidationError } = require('mongoose').Error;
-const Cards = require('../models/card');
+const Card = require('../models/card');
 const { sendMessage } = require('../utils/utils');
 
 const getCards = (req, res) => {
-  Cards.find({})
+  Card.find({})
     .populate('owner')
     .then((cards) => res.send(cards))
     .catch(() => sendMessage(res, 500, 'Произошла ошибка'));
@@ -19,7 +19,7 @@ const addCard = (req, res) => {
   } else if (!link) {
     sendMessage(res, 400, 'Не указана ссылка на карточку');
   } else {
-    Cards.create({ owner: req.user._id, name, link }, { validateBeforeSave: true })
+    Card.create({ owner: req.user._id, name, link })
       .then((card) => card.populate('owner'))
       .then((card) => res.send(card))
       .catch((err) => {
@@ -33,7 +33,7 @@ const addCard = (req, res) => {
 };
 
 const deleteCard = (req, res) => {
-  Cards.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
+  Card.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
     .populate('owner')
     .orFail()
     .then((card) => res.send(card))
@@ -47,7 +47,7 @@ const deleteCard = (req, res) => {
 };
 
 const addLike = (req, res) => {
-  Cards.findByIdAndUpdate(
+  Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true },
@@ -65,7 +65,7 @@ const addLike = (req, res) => {
 };
 
 const removeLike = (req, res) => {
-  Cards.findByIdAndUpdate(
+  Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true },

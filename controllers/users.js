@@ -24,25 +24,16 @@ const getUserById = (req, res) => {
 const addUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
-  if (Object.keys(req.body).length > 3) {
-    sendMessage(res, 400, 'Переданы лишние параметры');
-  } else if (!name) {
-    sendMessage(res, 400, 'Не указано имя пользователя');
-  } else if (!about) {
-    sendMessage(res, 400, 'Не указано описание пользователя');
-  } else if (!avatar) {
-    sendMessage(res, 400, 'Не указан аватар пользователя');
-  } else {
-    User.create({ name, about, avatar }, { validateBeforeSave: true })
-      .then((user) => res.send(user))
-      .catch((err) => {
-        if (err instanceof ValidationError) {
-          sendMessage(res, 400, 'Переданы некорректные данные');
-        } else {
-          sendMessage(res, 500, 'Произошла ошибка');
-        }
-      });
-  }
+  User.create({ name, about, avatar })
+    .then((user) => res.send(user))
+    .catch((err) => {
+      console.log(err);
+      if (err instanceof ValidationError) {
+        sendMessage(res, 400, 'Переданы некорректные данные');
+      } else {
+        sendMessage(res, 500, 'Произошла ошибка');
+      }
+    });
 };
 
 const updateProfile = (req, res) => {
@@ -55,7 +46,7 @@ const updateProfile = (req, res) => {
   } else if (!about) {
     sendMessage(res, 400, 'Не указано описание пользователя');
   } else {
-    User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    User.findByIdAndUpdate(req.user._id, { name, about }, { new: true })
       .orFail()
       .then((user) => res.send(user))
       .catch((err) => {
