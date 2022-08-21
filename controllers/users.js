@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+
 const { DocumentNotFoundError, ValidationError } = mongoose.Error;
-const ObjectId = mongoose.Types.ObjectId;
+const { ObjectId } = mongoose.Types;
 
 const User = require('../models/user');
 const { sendMessage } = require('../utils/utils');
@@ -12,7 +13,7 @@ const getAllUsers = (req, res) => {
 };
 
 const getUserById = (req, res) => {
-  const userId = req.params.userId;
+  const { userId } = req.params;
 
   if (!ObjectId.isValid(userId)) {
     sendMessage(res, 400, 'Не корректный id пользователя');
@@ -37,7 +38,6 @@ const addUser = (req, res) => {
   User.create({ name, about, avatar })
     .then((user) => res.send(user))
     .catch((err) => {
-      console.log(err);
       if (err instanceof ValidationError) {
         sendMessage(res, 400, 'Переданы некорректные данные');
       } else {

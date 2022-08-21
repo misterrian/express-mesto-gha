@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+
 const { DocumentNotFoundError, ValidationError } = mongoose.Error;
-const ObjectId = mongoose.Types.ObjectId;
+const { ObjectId } = mongoose.Types;
 
 const Card = require('../models/card');
 const { sendMessage } = require('../utils/utils');
