@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const { sendMessage } = require('./utils/utils');
+const { INVALID_ROUTE } = require('./utils/errors');
 
 const app = express();
 app.use(bodyParser.json());
@@ -29,7 +30,7 @@ app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
 app.use('*', (req, res) => {
-  sendMessage(res, 404, 'Bad path');
+  sendMessage(res, INVALID_ROUTE, 'Bad path');
 });
 
 app.listen(PORT, () => {
