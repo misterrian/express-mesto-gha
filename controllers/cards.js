@@ -1,18 +1,18 @@
 const { DocumentNotFoundError, ValidationError, CastError } = require('mongoose').Error;
 const Card = require('../models/card');
-const { sendMessage } = require('../utils/utils');
 
-const {
-  DB_ERROR,
-  INVALID_CARD_ID,
-  CARD_NOT_FOUND,
-} = require('../utils/errors');
+const DBError = require('../errors/db-error');
+const InvalidParametersError = require('../errors/invalid-parameters-error');
+const InvalidCardIdError = require('../errors/invalid-card-id-error');
+const CardNotFoundError = require('../errors/card-not-found-error');
 
 const getCards = (req, res) => {
   Card.find({})
     .populate('owner')
     .then((cards) => res.send(cards))
-    .catch(() => sendMessage(res, DB_ERROR, 'Произошла ошибка'));
+    .catch(() => {
+      throw new DBError();
+    });
 };
 
 const addCard = (req, res) => {
@@ -23,9 +23,9 @@ const addCard = (req, res) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        sendMessage(res, 400, 'Переданые некорректные данные карточки');
+        throw new InvalidParametersError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };
@@ -37,11 +37,11 @@ const deleteCard = (req, res) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        sendMessage(res, INVALID_CARD_ID, 'Некоректный id карточки');
+        throw new InvalidCardIdError();
       } else if (err instanceof DocumentNotFoundError) {
-        sendMessage(res, CARD_NOT_FOUND, 'Запрашиваемая карточка не найдена');
+        throw new CardNotFoundError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };
@@ -57,11 +57,11 @@ const addLike = (req, res) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        sendMessage(res, INVALID_CARD_ID, 'Некоректный id карточки');
+        throw new InvalidCardIdError();
       } else if (err instanceof DocumentNotFoundError) {
-        sendMessage(res, CARD_NOT_FOUND, 'Запрашиваемая карточка не найдена');
+        throw new CardNotFoundError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };
@@ -77,11 +77,11 @@ const removeLike = (req, res) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        sendMessage(res, INVALID_CARD_ID, 'Некоректный id карточки');
+        throw new InvalidCardIdError();
       } else if (err instanceof DocumentNotFoundError) {
-        sendMessage(res, CARD_NOT_FOUND, 'Запрашиваемая карточка не найдена');
+        throw new CardNotFoundError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };

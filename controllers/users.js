@@ -1,18 +1,90 @@
-const { DocumentNotFoundError, ValidationError, CastError } = require('mongoose').Error;
-const User = require('../models/user');
-const { sendMessage } = require('../utils/utils');
-
 const {
-  DB_ERROR,
-  INVALID_USER_ID,
-  USER_NOT_FOUND,
-  INVALID_PARAMETERS,
-} = require('../utils/errors');
+  DocumentNotFoundError,
+  ValidationError,
+  CastError,
+  MongoError,
+} = require('mongoose').Error;
+
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const User = require('../models/user');
+
+const InvalidParametersError = require('../errors/invalid-parameters-error');
+const DBError = require('../errors/db-error');
+const UserIsNotAuthorizedError = require('../errors/user-not-authorized-error');
+const InvalidUserIdError = require('../errors/invalid-user-id-error');
+const UserNotFoundError = require('../errors/user-not-found-error');
+const UserAlreadyExistsError = require('../errors/user-already-exists-error');
+
+const login = (req, res) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        'some-secret-key',
+        { expiresIn: '7d' },
+      );
+
+      res
+        .cookie('jwt', token, {
+          maxAge: 3800000 * 7 * 24,
+          httpOnly: true,
+        })
+        .send({ message: 'Всё верно!' });
+    })
+    .catch((err) => {
+      res
+        .status(401)
+        .send({ message: err.message });
+    });
+};
+
+const createUser = (req, res) => {
+  const {
+    email,
+    password,
+    name,
+    about,
+    avatar,
+  } = req.body;
+
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      email,
+      password: hash,
+      name,
+      about,
+      avatar,
+    }))
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err instanceof ValidationError) {
+        throw new InvalidParametersError();
+      } else if (err instanceof MongoError && err.code === 11000) {
+        throw new UserAlreadyExistsError();
+      } else {
+        throw new DBError();
+      }
+    });
+};
+
+const getCurrentUser = (req, res) => {
+  if (req.user) {
+    res.send(req.user);
+  } else {
+    throw new UserIsNotAuthorizedError();
+  }
+};
 
 const getAllUsers = (req, res) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch(() => sendMessage(res, DB_ERROR, 'Произошла ошибка'));
+    .catch(() => {
+      throw new DBError();
+    });
 };
 
 const getUserById = (req, res) => {
@@ -23,25 +95,11 @@ const getUserById = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof CastError) {
-        sendMessage(res, INVALID_USER_ID, 'Не корректный id пользователя');
+        throw new InvalidUserIdError();
       } else if (err instanceof DocumentNotFoundError) {
-        sendMessage(res, USER_NOT_FOUND, 'Запрашиваемый пользователь не найден');
+        throw new UserNotFoundError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
-      }
-    });
-};
-
-const addUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-
-  User.create({ name, about, avatar })
-    .then((user) => res.send(user))
-    .catch((err) => {
-      if (err instanceof ValidationError) {
-        sendMessage(res, INVALID_PARAMETERS, 'Переданы некорректные данные');
-      } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };
@@ -54,11 +112,11 @@ const updateProfile = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        sendMessage(res, INVALID_PARAMETERS, 'Переданы некорректные данные');
+        throw new InvalidParametersError();
       } else if (err instanceof DocumentNotFoundError) {
-        sendMessage(res, USER_NOT_FOUND, 'Запрашиваемый пользователь не найден');
+        throw new UserNotFoundError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };
@@ -71,17 +129,19 @@ const updateAvatar = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof DocumentNotFoundError) {
-        sendMessage(res, USER_NOT_FOUND, 'Запрашиваемый пользователь не найден');
+        throw new UserNotFoundError();
       } else {
-        sendMessage(res, DB_ERROR, 'Произошла ошибка');
+        throw new DBError();
       }
     });
 };
 
 module.exports = {
+  login,
+  createUser,
+  getCurrentUser,
   getAllUsers,
   getUserById,
-  addUser,
   updateProfile,
   updateAvatar,
 };

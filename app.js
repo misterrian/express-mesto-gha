@@ -5,33 +5,39 @@ const {
 
 const express = require('express');
 const mongoose = require('mongoose');
-
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+
+const { login, createUser } = require('./controllers/users');
+const { auth } = require('./middlewares/auth');
+const { errors } = require('./middlewares/errors');
+
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
-const { sendMessage } = require('./utils/utils');
-const { INVALID_ROUTE } = require('./utils/errors');
+
+const InvalidRoute = require('./errors/invalid-route-error');
 
 const app = express();
 app.use(bodyParser.json());
-
-app.use((req, res, next) => {
-  req.user = {
-    _id: '6301f71e2b9163fa68b8b74f',
-  };
-  next();
-});
+app.use(cookieParser());
 
 mongoose.connect(MONGODB, {
   useNewUrlParser: true,
 });
 
+app.post('/signin', login);
+app.post('/signup', createUser);
+
+app.use(auth);
+
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
-app.use('*', (req, res) => {
-  sendMessage(res, INVALID_ROUTE, 'Bad path');
+app.use('*', () => {
+  throw new InvalidRoute();
 });
+
+app.use(errors);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
