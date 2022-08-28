@@ -7,10 +7,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const { errors } = require('celebrate');
 
-const { login, createUser } = require('./controllers/users');
+const {
+  login,
+  loginValidator,
+  createUser,
+  createUserValidator,
+} = require('./controllers/users');
+
 const { auth } = require('./middlewares/auth');
-const { errors } = require('./middlewares/errors');
+const { errorsHandler } = require('./middlewares/errors');
 
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
@@ -25,8 +32,8 @@ mongoose.connect(MONGODB, {
   useNewUrlParser: true,
 });
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', loginValidator, login);
+app.post('/signup', createUserValidator, createUser);
 
 app.use(auth);
 
@@ -37,7 +44,8 @@ app.use('*', () => {
   throw new InvalidRoute();
 });
 
-app.use(errors);
+app.use(errors());
+app.use(errorsHandler);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);

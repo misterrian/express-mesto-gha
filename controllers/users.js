@@ -7,6 +7,7 @@ const {
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { celebrate, Joi } = require('celebrate');
 
 const User = require('../models/user');
 
@@ -42,6 +43,18 @@ const login = (req, res) => {
     });
 };
 
+const loginValidator = celebrate({
+  body: Joi.object()
+    .keys({
+      email: Joi.string()
+        .required()
+        .email(),
+      password: Joi.string()
+        .required()
+        .min(8),
+    }),
+});
+
 const createUser = (req, res) => {
   const {
     email,
@@ -70,6 +83,26 @@ const createUser = (req, res) => {
       }
     });
 };
+
+const createUserValidator = celebrate({
+  body: Joi.object()
+    .keys({
+      email: Joi.string()
+        .required()
+        .email(),
+      password: Joi.string()
+        .required()
+        .min(8),
+      name: Joi.string()
+        .min(2)
+        .max(30),
+      about: Joi.string()
+        .min(2)
+        .max(30),
+      avatar: Joi.string()
+        .pattern(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/),
+    }),
+});
 
 const getCurrentUser = (req, res) => {
   if (req.user) {
@@ -138,7 +171,9 @@ const updateAvatar = (req, res) => {
 
 module.exports = {
   login,
+  loginValidator,
   createUser,
+  createUserValidator,
   getCurrentUser,
   getAllUsers,
   getUserById,
