@@ -9,10 +9,7 @@ const CardNotFoundError = require('../errors/card-not-found-error');
 const getCards = (req, res, next) => {
   Card.find({})
     .populate('owner')
-    .then((cards) => {
-      res.send(cards);
-      next();
-    })
+    .then((cards) => res.send(cards))
     .catch(() => next(new DBError()));
 };
 
@@ -21,10 +18,7 @@ const addCard = (req, res, next) => {
 
   Card.create({ owner: req.user._id, name, link })
     .then((card) => card.populate('owner'))
-    .then((card) => {
-      res.send(card);
-      next();
-    })
+    .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof ValidationError) {
         next(new InvalidParametersError());
@@ -38,10 +32,7 @@ const deleteCard = (req, res, next) => {
   Card.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
     .populate('owner')
     .orFail()
-    .then((card) => {
-      res.send(card);
-      next();
-    })
+    .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
         next(new InvalidCardIdError());

@@ -35,8 +35,6 @@ const login = (req, res, next) => {
           httpOnly: true,
         })
         .send({ message: 'OK' });
-
-      next();
     })
     .catch(() => next(new InvalidUserOrPasswordError()));
 };
@@ -70,10 +68,7 @@ const createUser = (req, res, next) => {
       about,
       avatar,
     }))
-    .then((user) => {
-      const { email, name, about, avatar } = user;
-      res.send({ email, name, about, avatar });
-    })
+    .then((user) => res.send(user.toObject({ useProjection: true })))
     .catch((err) => {
       if (err instanceof ValidationError) {
         next(new InvalidParametersError());
@@ -105,23 +100,7 @@ const createUserValidator = celebrate({
     }),
 });
 
-const getCurrentUser = (req, res, next) => {
-  if (req.user) {
-    res.send(req.user);
-  } else {
-    next(new UserIsNotAuthorizedError());
-  }
-};
-
-const getAllUsers = (req, res, next) => {
-  User.find({})
-    .then((users) => res.send(users))
-    .catch(() => next(DBError()));
-};
-
-const getUserById = (req, res, next) => {
-  const { userId } = req.params;
-
+function loadUserFromDb(userId, res, next) {
   User.findById(userId)
     .orFail()
     .then((user) => res.send(user))
@@ -134,6 +113,24 @@ const getUserById = (req, res, next) => {
         next(new DBError());
       }
     });
+}
+
+const getCurrentUser = (req, res, next) => {
+  if (req.user) {
+    loadUserFromDb(req.user._id, res, next);
+  } else {
+    next(new UserIsNotAuthorizedError());
+  }
+};
+
+const getAllUsers = (req, res, next) => {
+  User.find({})
+    .then((users) => res.send(users))
+    .catch(() => next(DBError()));
+};
+
+const getUserById = (req, res, next) => {
+  loadUserFromDb(req.params.userId, res, next);
 };
 
 const updateProfile = (req, res, next) => {
