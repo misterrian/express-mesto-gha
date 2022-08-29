@@ -9,10 +9,10 @@ const auth = (req, res, next) => {
       req.user = jwt.verify(token, 'some-secret-key');
       next();
     } catch (err) {
-      throw new InvalidUserOrPasswordError();
+      next(new InvalidUserOrPasswordError());
     }
   } else {
-    throw new InvalidUserOrPasswordError();
+    next(new InvalidUserOrPasswordError());
   }
 };
 

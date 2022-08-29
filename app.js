@@ -40,8 +40,8 @@ app.use(auth);
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
-app.use('*', () => {
-  throw new InvalidRoute();
+app.use('*', (req, res, next) => {
+  next(new InvalidRoute());
 });
 
 app.use(errors());

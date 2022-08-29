@@ -2,7 +2,6 @@ const {
   DocumentNotFoundError,
   ValidationError,
   CastError,
-  MongoError,
 } = require('mongoose').Error;
 
 const bcrypt = require('bcryptjs');
@@ -17,8 +16,9 @@ const UserIsNotAuthorizedError = require('../errors/user-not-authorized-error');
 const InvalidUserIdError = require('../errors/invalid-user-id-error');
 const UserNotFoundError = require('../errors/user-not-found-error');
 const UserAlreadyExistsError = require('../errors/user-already-exists-error');
+const InvalidUserOrPasswordError = require('../errors/invalid-user-or-password-error');
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
@@ -34,13 +34,11 @@ const login = (req, res) => {
           maxAge: 3800000 * 7 * 24,
           httpOnly: true,
         })
-        .send({ message: 'Всё верно!' });
+        .send({ message: 'OK' });
+
+      next();
     })
-    .catch((err) => {
-      res
-        .status(401)
-        .send({ message: err.message });
-    });
+    .catch(() => next(new InvalidUserOrPasswordError()));
 };
 
 const loginValidator = celebrate({
@@ -55,7 +53,7 @@ const loginValidator = celebrate({
     }),
 });
 
-const createUser = (req, res) => {
+const createUser = (req, res, next) => {
   const {
     email,
     password,
@@ -72,14 +70,17 @@ const createUser = (req, res) => {
       about,
       avatar,
     }))
-    .then((user) => res.send(user))
+    .then((user) => {
+      const { email, name, about, avatar } = user;
+      res.send({ email, name, about, avatar });
+    })
     .catch((err) => {
       if (err instanceof ValidationError) {
-        throw new InvalidParametersError();
-      } else if (err instanceof MongoError && err.code === 11000) {
-        throw new UserAlreadyExistsError();
+        next(new InvalidParametersError());
+      } else if (err.name === 'MongoServerError' && err.code === 11000) {
+        next(new UserAlreadyExistsError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
@@ -104,23 +105,21 @@ const createUserValidator = celebrate({
     }),
 });
 
-const getCurrentUser = (req, res) => {
+const getCurrentUser = (req, res, next) => {
   if (req.user) {
     res.send(req.user);
   } else {
-    throw new UserIsNotAuthorizedError();
+    next(new UserIsNotAuthorizedError());
   }
 };
 
-const getAllUsers = (req, res) => {
+const getAllUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch(() => {
-      throw new DBError();
-    });
+    .catch(() => next(DBError()));
 };
 
-const getUserById = (req, res) => {
+const getUserById = (req, res, next) => {
   const { userId } = req.params;
 
   User.findById(userId)
@@ -128,16 +127,16 @@ const getUserById = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof CastError) {
-        throw new InvalidUserIdError();
+        next(new InvalidUserIdError());
       } else if (err instanceof DocumentNotFoundError) {
-        throw new UserNotFoundError();
+        next(new UserNotFoundError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
 
-const updateProfile = (req, res) => {
+const updateProfile = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
@@ -145,16 +144,16 @@ const updateProfile = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        throw new InvalidParametersError();
+        next(new InvalidParametersError());
       } else if (err instanceof DocumentNotFoundError) {
-        throw new UserNotFoundError();
+        next(new UserNotFoundError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
 
-const updateAvatar = (req, res) => {
+const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
@@ -162,9 +161,9 @@ const updateAvatar = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof DocumentNotFoundError) {
-        throw new UserNotFoundError();
+        next(new UserNotFoundError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };

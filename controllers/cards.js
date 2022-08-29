@@ -6,47 +6,54 @@ const InvalidParametersError = require('../errors/invalid-parameters-error');
 const InvalidCardIdError = require('../errors/invalid-card-id-error');
 const CardNotFoundError = require('../errors/card-not-found-error');
 
-const getCards = (req, res) => {
+const getCards = (req, res, next) => {
   Card.find({})
     .populate('owner')
-    .then((cards) => res.send(cards))
-    .catch(() => {
-      throw new DBError();
-    });
+    .then((cards) => {
+      res.send(cards);
+      next();
+    })
+    .catch(() => next(new DBError()));
 };
 
-const addCard = (req, res) => {
+const addCard = (req, res, next) => {
   const { name, link } = req.body;
 
   Card.create({ owner: req.user._id, name, link })
     .then((card) => card.populate('owner'))
-    .then((card) => res.send(card))
+    .then((card) => {
+      res.send(card);
+      next();
+    })
     .catch((err) => {
       if (err instanceof ValidationError) {
-        throw new InvalidParametersError();
+        next(new InvalidParametersError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
 
-const deleteCard = (req, res) => {
+const deleteCard = (req, res, next) => {
   Card.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
     .populate('owner')
     .orFail()
-    .then((card) => res.send(card))
+    .then((card) => {
+      res.send(card);
+      next();
+    })
     .catch((err) => {
       if (err instanceof CastError) {
-        throw new InvalidCardIdError();
+        next(new InvalidCardIdError());
       } else if (err instanceof DocumentNotFoundError) {
-        throw new CardNotFoundError();
+        next(new CardNotFoundError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
 
-const addLike = (req, res) => {
+const addLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -57,16 +64,16 @@ const addLike = (req, res) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        throw new InvalidCardIdError();
+        next(new InvalidCardIdError());
       } else if (err instanceof DocumentNotFoundError) {
-        throw new CardNotFoundError();
+        next(new CardNotFoundError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
 
-const removeLike = (req, res) => {
+const removeLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
@@ -77,11 +84,11 @@ const removeLike = (req, res) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        throw new InvalidCardIdError();
+        next(new InvalidCardIdError());
       } else if (err instanceof DocumentNotFoundError) {
-        throw new CardNotFoundError();
+        next(new CardNotFoundError());
       } else {
-        throw new DBError();
+        next(new DBError());
       }
     });
 };
