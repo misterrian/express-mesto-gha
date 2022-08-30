@@ -37,7 +37,7 @@ const deleteCard = (req, res, next) => {
         return Card.findOneAndRemove({ _id: req.params.cardId })
           .populate('owner')
           .orFail()
-          .then((card) => res.send(card));
+          .then((cardWithOwner) => res.send(cardWithOwner));
       }
       return Promise.reject(new InvalidOwnerError());
     })
