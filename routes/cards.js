@@ -9,6 +9,8 @@ const {
   removeLike,
 } = require('../controllers/cards');
 
+const { linkRegExp } = require('../utils/utils');
+
 const router = express.Router();
 
 router.get('/', getCards);
@@ -23,7 +25,8 @@ router.post(
           .min(2)
           .max(30),
         link: Joi.string()
-          .required(),
+          .required()
+          .pattern(linkRegExp),
       }),
   }),
   addCard,
@@ -47,9 +50,10 @@ router.put(
   celebrate({
     params: Joi.object()
       .keys({
-        cardId: Joi.number()
-          .integer()
-          .required(),
+        cardId: Joi.string()
+          .required()
+          .hex()
+          .length(24),
       }),
   }),
   addLike,

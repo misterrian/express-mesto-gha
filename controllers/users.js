@@ -18,6 +18,8 @@ const UserNotFoundError = require('../errors/user-not-found-error');
 const UserAlreadyExistsError = require('../errors/user-already-exists-error');
 const InvalidUserOrPasswordError = require('../errors/invalid-user-or-password-error');
 
+const { linkRegExp } = require('../utils/utils');
+
 const login = (req, res, next) => {
   const { email, password } = req.body;
 
@@ -96,7 +98,7 @@ const createUserValidator = celebrate({
         .min(2)
         .max(30),
       avatar: Joi.string()
-        .pattern(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/),
+        .pattern(linkRegExp),
     }),
 });
 
