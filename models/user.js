@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
-const InvalidUserOrPasswordError = require('../errors/invalid-user-or-password-error');
 const { linkRegExp } = require('../utils/utils');
+const UnauthorizedError = require('../errors/unauthorized-error');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -59,10 +59,10 @@ function findUserByCredentials(email, password) {
             if (matched) {
               return user;
             }
-            return Promise.reject(new InvalidUserOrPasswordError());
+            return Promise.reject(new UnauthorizedError('Некорректный пользователь или пароль'));
           });
       }
-      return Promise.reject(new InvalidUserOrPasswordError());
+      return Promise.reject(new UnauthorizedError('Некорректный пользователь или пароль'));
     });
 }
 

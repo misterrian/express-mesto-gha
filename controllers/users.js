@@ -9,13 +9,11 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 
-const InvalidParametersError = require('../errors/invalid-parameters-error');
-const DBError = require('../errors/db-error');
-const UserIsNotAuthorizedError = require('../errors/user-not-authorized-error');
-const InvalidUserIdError = require('../errors/invalid-user-id-error');
-const UserNotFoundError = require('../errors/user-not-found-error');
-const UserAlreadyExistsError = require('../errors/user-already-exists-error');
-const InvalidUserOrPasswordError = require('../errors/invalid-user-or-password-error');
+const NotFoundError = require('../errors/not-found-error');
+const BadRequestError = require('../errors/bad-request-error');
+const UnauthorizedError = require('../errors/unauthorized-error');
+const ConflictError = require('../errors/conflict-error');
+const InternalServerError = require('../errors/internal-server-error');
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
@@ -35,7 +33,7 @@ const login = (req, res, next) => {
         })
         .send({ message: 'OK' });
     })
-    .catch(() => next(new InvalidUserOrPasswordError()));
+    .catch(() => next(new UnauthorizedError('Некорректный пользователь или пароль')));
 };
 
 const createUser = (req, res, next) => {
@@ -58,11 +56,11 @@ const createUser = (req, res, next) => {
     .then((user) => res.send(user.toObject({ useProjection: true })))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        next(new InvalidParametersError());
+        next(new BadRequestError('Переданы некорректные данные'));
       } else if (err.name === 'MongoServerError' && err.code === 11000) {
-        next(new UserAlreadyExistsError());
+        next(new ConflictError('Пользователь с указанным email уже существует'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };
@@ -77,11 +75,11 @@ function loadUserFromDb(userId, res, next) {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof CastError) {
-        next(new InvalidUserIdError());
+        next(new BadRequestError('Некорректный id пользователя'));
       } else if (err instanceof DocumentNotFoundError) {
-        next(new UserNotFoundError());
+        next(new NotFoundError('Запрашиваемый пользователь не найден'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 }
@@ -90,14 +88,14 @@ const getCurrentUser = (req, res, next) => {
   if (req.user) {
     loadUserFromDb(req.user._id, res, next);
   } else {
-    next(new UserIsNotAuthorizedError());
+    next(new UnauthorizedError('Пользователь не авторизован'));
   }
 };
 
 const getAllUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch(() => next(DBError()));
+    .catch(() => next(InternalServerError('Произошла ошибка')));
 };
 
 const getUserById = (req, res, next) => {
@@ -112,11 +110,11 @@ const updateProfile = (req, res, next) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        next(new InvalidParametersError());
+        next(new BadRequestError('Переданы некорректные данные'));
       } else if (err instanceof DocumentNotFoundError) {
-        next(new UserNotFoundError());
+        next(new NotFoundError('Запрашиваемый пользователь не найден'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };
@@ -129,9 +127,9 @@ const updateAvatar = (req, res, next) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof DocumentNotFoundError) {
-        next(new UserNotFoundError());
+        next(new NotFoundError('Запрашиваемый пользователь не найден'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };

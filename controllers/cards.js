@@ -1,17 +1,16 @@
 const { DocumentNotFoundError, ValidationError, CastError } = require('mongoose').Error;
 const Card = require('../models/card');
 
-const DBError = require('../errors/db-error');
-const InvalidParametersError = require('../errors/invalid-parameters-error');
-const InvalidCardIdError = require('../errors/invalid-card-id-error');
-const CardNotFoundError = require('../errors/card-not-found-error');
-const InvalidOwnerError = require('../errors/invalid-owner-error');
+const NotFoundError = require('../errors/not-found-error');
+const BadRequestError = require('../errors/bad-request-error');
+const ForbiddenError = require('../errors/forbidden-error');
+const InternalServerError = require('../errors/internal-server-error');
 
 const getCards = (req, res, next) => {
   Card.find({})
     .populate('owner')
     .then((cards) => res.send(cards))
-    .catch(() => next(new DBError()));
+    .catch(() => next(new InternalServerError('Произошла ошибка')));
 };
 
 const addCard = (req, res, next) => {
@@ -22,9 +21,9 @@ const addCard = (req, res, next) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        next(new InvalidParametersError());
+        next(new BadRequestError('Переданы некорректные данные'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };
@@ -39,17 +38,17 @@ const deleteCard = (req, res, next) => {
           .orFail()
           .then((cardWithOwner) => res.send(cardWithOwner));
       }
-      return Promise.reject(new InvalidOwnerError());
+      return Promise.reject(new ForbiddenError('Нельзя изменять данные других пользователей'));
     })
     .catch((err) => {
       if (err instanceof CastError) {
-        next(new InvalidCardIdError());
+        next(new BadRequestError('Некоректный id карточки'));
       } else if (err instanceof DocumentNotFoundError) {
-        next(new CardNotFoundError());
-      } else if (err instanceof InvalidOwnerError) {
+        next(new NotFoundError('Запрашиваемая карточка не найдена'));
+      } else if (err instanceof ForbiddenError) {
         next(err);
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };
@@ -65,11 +64,11 @@ const addLike = (req, res, next) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        next(new InvalidCardIdError());
+        next(new BadRequestError('Некоректный id карточки'));
       } else if (err instanceof DocumentNotFoundError) {
-        next(new CardNotFoundError());
+        next(new NotFoundError('Запрашиваемая карточка не найдена'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };
@@ -85,11 +84,11 @@ const removeLike = (req, res, next) => {
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        next(new InvalidCardIdError());
+        next(new BadRequestError('Некоректный id карточки'));
       } else if (err instanceof DocumentNotFoundError) {
-        next(new CardNotFoundError());
+        next(new NotFoundError('Запрашиваемая карточка не найдена'));
       } else {
-        next(new DBError());
+        next(new InternalServerError('Произошла ошибка'));
       }
     });
 };

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const InvalidUserOrPasswordError = require('../errors/invalid-user-or-password-error');
+const UnauthorizedError = require('../errors/unauthorized-error');
 
 const auth = (req, res, next) => {
   const token = req.cookies.jwt;
@@ -9,10 +9,10 @@ const auth = (req, res, next) => {
       req.user = jwt.verify(token, 'some-secret-key');
       next();
     } catch (err) {
-      next(new InvalidUserOrPasswordError());
+      next(new UnauthorizedError('Некорректный пользователь или пароль'));
     }
   } else {
-    next(new InvalidUserOrPasswordError());
+    next(new UnauthorizedError('Некорректный пользователь или пароль'));
   }
 };
 
