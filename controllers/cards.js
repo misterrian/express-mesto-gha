@@ -33,8 +33,11 @@ const deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
     .orFail()
     .then((card) => {
-      if (card.owner._id === req.user._id) {
-        return Card.findOneAndRemove({ _id: req.params.cardId });
+      if (card.owner.toString() === req.user._id) {
+        return Card.findOneAndRemove({ _id: req.params.cardId })
+          .populate('owner')
+          .orFail()
+          .then((card) => res.send(card));
       }
       return Promise.reject(new InvalidOwnerError());
     })
