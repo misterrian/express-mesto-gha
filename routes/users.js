@@ -21,7 +21,9 @@ router.get(
       .keys({
         userId: Joi
           .string()
-          .required(),
+          .required()
+          .hex()
+          .length(24),
       }),
   }),
   getUserById,
