@@ -5,6 +5,7 @@ const DBError = require('../errors/db-error');
 const InvalidParametersError = require('../errors/invalid-parameters-error');
 const InvalidCardIdError = require('../errors/invalid-card-id-error');
 const CardNotFoundError = require('../errors/card-not-found-error');
+const InvalidOwnerError = require('../errors/invalid-owner-error');
 
 const getCards = (req, res, next) => {
   Card.find({})
@@ -29,6 +30,26 @@ const addCard = (req, res, next) => {
 };
 
 const deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
+    .orFail()
+    .then((card) => {
+      if (card.owner._id === req.user._id) {
+        return Card.findOneAndRemove({ _id: req.params.cardId });
+      }
+      return Promise.reject(new InvalidOwnerError());
+    })
+    .catch((err) => {
+      if (err instanceof CastError) {
+        next(new InvalidCardIdError());
+      } else if (err instanceof DocumentNotFoundError) {
+        next(new CardNotFoundError());
+      } else if (err instanceof InvalidOwnerError) {
+        next(err);
+      } else {
+        next(new DBError());
+      }
+    });
+
   Card.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
     .populate('owner')
     .orFail()
