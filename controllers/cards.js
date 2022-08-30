@@ -49,20 +49,6 @@ const deleteCard = (req, res, next) => {
         next(new DBError());
       }
     });
-
-  Card.findOneAndRemove({ owner: req.user._id, _id: req.params.cardId })
-    .populate('owner')
-    .orFail()
-    .then((card) => res.send(card))
-    .catch((err) => {
-      if (err instanceof CastError) {
-        next(new InvalidCardIdError());
-      } else if (err instanceof DocumentNotFoundError) {
-        next(new CardNotFoundError());
-      } else {
-        next(new DBError());
-      }
-    });
 };
 
 const addLike = (req, res, next) => {
