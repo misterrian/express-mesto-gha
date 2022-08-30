@@ -6,7 +6,6 @@ const {
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { celebrate, Joi } = require('celebrate');
 
 const User = require('../models/user');
 
@@ -17,8 +16,6 @@ const InvalidUserIdError = require('../errors/invalid-user-id-error');
 const UserNotFoundError = require('../errors/user-not-found-error');
 const UserAlreadyExistsError = require('../errors/user-already-exists-error');
 const InvalidUserOrPasswordError = require('../errors/invalid-user-or-password-error');
-
-const { linkRegExp } = require('../utils/utils');
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
@@ -40,18 +37,6 @@ const login = (req, res, next) => {
     })
     .catch(() => next(new InvalidUserOrPasswordError()));
 };
-
-const loginValidator = celebrate({
-  body: Joi.object()
-    .keys({
-      email: Joi.string()
-        .required()
-        .email(),
-      password: Joi.string()
-        .required()
-        .min(8),
-    }),
-});
 
 const createUser = (req, res, next) => {
   const {
@@ -82,25 +67,9 @@ const createUser = (req, res, next) => {
     });
 };
 
-const createUserValidator = celebrate({
-  body: Joi.object()
-    .keys({
-      email: Joi.string()
-        .required()
-        .email(),
-      password: Joi.string()
-        .required()
-        .min(8),
-      name: Joi.string()
-        .min(2)
-        .max(30),
-      about: Joi.string()
-        .min(2)
-        .max(30),
-      avatar: Joi.string()
-        .pattern(linkRegExp),
-    }),
-});
+const signout = (req, res) => {
+  res.clearCookie('jwt').send({ message: 'OK' });
+};
 
 function loadUserFromDb(userId, res, next) {
   User.findById(userId)
@@ -169,9 +138,8 @@ const updateAvatar = (req, res, next) => {
 
 module.exports = {
   login,
-  loginValidator,
   createUser,
-  createUserValidator,
+  signout,
   getCurrentUser,
   getAllUsers,
   getUserById,
