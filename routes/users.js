@@ -19,8 +19,8 @@ router.get(
   celebrate({
     params: Joi.object()
       .keys({
-        userId: Joi.number()
-          .integer()
+        userId: Joi
+          .string()
           .required(),
       }),
   }),
